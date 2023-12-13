@@ -1,15 +1,16 @@
 import random
 import simpy
 import numpy as np
+import matplotlib.pyplot as plt
 
-class MM1Queue:
+class MMinfQueue:
     def __init__(self, arrival_rate, service_rate, num_customers):
         self.arrival_rate = arrival_rate
         self.service_rate = service_rate
         self.num_customers = num_customers
         self.env = simpy.Environment()
         self.queue = simpy.Store(self.env)
-        self.server = simpy.Resource(self.env, capacity=1)
+        self.server = simpy.Resource(self.env, capacity=1000000) # infinite capacity
         self.queue_lengths = []
         self.done = False
         self.rng = np.random.default_rng()
@@ -35,21 +36,27 @@ class MM1Queue:
     #     self.env.run(until=sim_time)
 
     def stats_processing(self):
+        # yield self.env.timeout(100)
         while not self.done:
-            res = self.server
-            self.queue_lengths.append(len(res.queue))
-            # print(f'{res.count} of {res.capacity} slots are allocated.')
+            self.queue_lengths.append(self.server.count)
+            # print(f'{self.server.count} of {self.server.capacity} slots are allocated.')
             # print(f'  Users: {len(res.users)}')
             # print(f'  Queued events: {len(res.queue)}')
             yield self.env.timeout(0.1)
         print("Simulation complete")
         print(f'Average queue length: {np.mean(self.queue_lengths)}')
+        graph_queue_lengths(self.queue_lengths)
+
+def graph_queue_lengths(queue_lengths):
+    x = [i*0.1 for i in range(len(queue_lengths))]
+    plt.plot(x, queue_lengths)
+    plt.show()
 
 # Example usage
 if __name__ == "__main__":
-    arrival_rate = 0.5  # average arrival rate of customers per unit of time
-    service_rate = 0.8  # average service rate of the server per unit of time
+    arrival_rate = 10  # average arrival rate of customers per unit of time
+    service_rate = 1  # average service rate of the server per unit of time
     num_customers = 10000  # total number of customers to simulate
 
-    queue = MM1Queue(arrival_rate, service_rate, num_customers)
+    queue = MMinfQueue(arrival_rate, service_rate, num_customers)
     queue.run_simulation()
